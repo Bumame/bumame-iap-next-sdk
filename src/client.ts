@@ -76,6 +76,7 @@ function normalizePrincipal(payload: JWTPayload): Principal {
     audience: typeof payload.aud === "string" ? [payload.aud] : payload.aud ?? [],
     email: stringValue(payload.email) ?? stringValue(ext.email),
     name: stringValue(payload.name) ?? stringValue(ext.name),
+    picture: stringValue(payload.picture) ?? stringValue(ext.picture),
     roles: stringArray(ext.roles),
     permissions: stringArray(ext.permissions),
   };

@@ -31,6 +31,7 @@ export interface Principal {
   audience: string[];
   email?: string;
   name?: string;
+  picture?: string;
   roles: string[];
   permissions: string[];
 }
