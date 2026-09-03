@@ -14,4 +14,16 @@ describe("profileMenuView", () => {
     }, "Doctor");
     expect(view).toEqual({ name: "Irfan Ghifari", role: "Doctor", initials: "IG" });
   });
+
+  it("turns a namespaced role into a readable label", () => {
+    const view = profileMenuView({
+      subject: "user-2",
+      issuer: "https://auth.bumame.com",
+      audience: ["urn:bumame:cis"],
+      roles: ["cis.front-office"],
+      permissions: [],
+      name: "Bumame User",
+    });
+    expect(view.role).toBe("Front Office");
+  });
 });

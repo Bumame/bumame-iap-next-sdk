@@ -1,6 +1,6 @@
 {
   "name": "@bumame/iap-next-sdk",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "description": "Bumame IAP server helpers for Next.js applications",
   "license": "MIT",
   "type": "module",
