@@ -5,7 +5,7 @@ Server-side/BFF helpers for Next.js 15–16 applications using Bumame IAP.
 ## Install from GitHub
 
 ```bash
-npm install github:Bumame/bumame-iap-next-sdk#v0.1.0-alpha.3
+npm install github:Bumame/bumame-iap-next-sdk#v1.0.0
 ```
 
 The package repository is public; applications should still pin a released tag.
@@ -25,6 +25,7 @@ const iap = new IapClient({
 
 const principal = await iap.verifyAccessToken(accessToken);
 requireAnyPermission(principal, ["cis.patient.read"]);
+requireResource(principal, "cis.clinics", selectedClinicId);
 ```
 
 Store `state`, `nonce`, PKCE verifier, tokens, and refresh tokens in encrypted, `HttpOnly`, `Secure`, `SameSite=Lax` server cookies or a server session. Never expose client secrets or refresh tokens to browser JavaScript. UI checks are for visibility only; the Go backend remains the security boundary.

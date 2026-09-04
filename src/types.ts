@@ -34,7 +34,10 @@ export interface Principal {
   picture?: string;
   roles: string[];
   permissions: string[];
+  resourceScopes: Record<string, ResourceScope>;
 }
+
+export interface ResourceScope { mode: "all" | "selected"; ids: string[]; }
 
 export interface AuthorizationRequest {
   url: string;

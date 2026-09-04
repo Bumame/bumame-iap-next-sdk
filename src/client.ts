@@ -1,4 +1,4 @@
-import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "jose";
+import { createRemoteJWKSet, decodeJwt, jwtVerify, type JWTPayload } from "jose";
 import type { AuthorizationRequest, DiscoveryDocument, IapConfig, Principal, TokenSet } from "./types.js";
 
 const textEncoder = new TextEncoder();
@@ -35,8 +35,12 @@ export class IapClient {
     return { url: url.toString(), state, nonce, codeVerifier };
   }
 
-  async exchangeCode(code: string, codeVerifier: string): Promise<TokenSet> {
-    return this.tokenRequest({ grant_type: "authorization_code", code, redirect_uri: this.config.redirectUri, code_verifier: codeVerifier });
+  async exchangeCode(code: string, codeVerifier: string, expectedNonce?: string): Promise<TokenSet> {
+    const tokens = await this.tokenRequest({ grant_type: "authorization_code", code, redirect_uri: this.config.redirectUri, code_verifier: codeVerifier });
+    if (expectedNonce && (!tokens.id_token || decodeJwt(tokens.id_token).nonce !== expectedNonce)) {
+      throw new Error("IAP ID token nonce is invalid");
+    }
+    return tokens;
   }
 
   async refresh(refreshToken: string): Promise<TokenSet> { return this.tokenRequest({ grant_type: "refresh_token", refresh_token: refreshToken }); }
@@ -79,9 +83,17 @@ function normalizePrincipal(payload: JWTPayload): Principal {
     picture: stringValue(payload.picture) ?? stringValue(ext.picture),
     roles: stringArray(ext.roles),
     permissions: stringArray(ext.permissions),
+    resourceScopes: resourceScopes(ext.resource_scopes ?? payload.resource_scopes),
   };
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 const stringValue = (value: unknown) => typeof value === "string" ? value : undefined;
 const stringArray = (value: unknown) => Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+const resourceScopes = (value: unknown): Principal["resourceScopes"] => {
+  if (!isRecord(value)) return {};
+  return Object.fromEntries(Object.entries(value).flatMap(([key, raw]) => {
+    if (!isRecord(raw) || (raw.mode !== "all" && raw.mode !== "selected")) return [];
+    return [[key, { mode: raw.mode, ids: stringArray(raw.ids) }]];
+  }));
+};

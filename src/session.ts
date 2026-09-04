@@ -30,10 +30,11 @@ export class IapServerSession {
     const state = url.searchParams.get("state");
     const request = await this.store.readAuthorizationRequest();
     if (!code || !state || !request || state !== request.state) {
+      await this.store.clearAuthorizationRequest();
       throw new Error("IAP callback is missing or has an invalid state");
     }
     try {
-      const tokens = await this.client.exchangeCode(code, request.codeVerifier);
+      const tokens = await this.client.exchangeCode(code, request.codeVerifier, request.nonce);
       await this.store.writeTokens(tokens);
       return tokens;
     } finally {
