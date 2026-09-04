@@ -4,6 +4,10 @@ export const hasRole = (principal: Principal | null | undefined, role: string) =
 export const hasAnyRole = (principal: Principal | null | undefined, roles: string[]) => roles.some((role) => hasRole(principal, role));
 export const hasPermission = (principal: Principal | null | undefined, permission: string) => principal?.permissions.includes(permission) ?? false;
 export const hasAnyPermission = (principal: Principal | null | undefined, permissions: string[]) => permissions.some((permission) => hasPermission(principal, permission));
+export const hasResource = (principal: Principal | null | undefined, type: string, id: string) => {
+  const scope = principal?.resourceScopes[type];
+  return scope?.mode === "all" || (scope?.mode === "selected" && scope.ids.includes(id));
+};
 
 export function requireAnyPermission(principal: Principal | null | undefined, permissions: string[]): Principal {
   if (!principal) throw new IapAuthorizationError(401, "unauthenticated");
@@ -14,6 +18,12 @@ export function requireAnyPermission(principal: Principal | null | undefined, pe
 export function requireAnyRole(principal: Principal | null | undefined, roles: string[]): Principal {
   if (!principal) throw new IapAuthorizationError(401, "unauthenticated");
   if (!hasAnyRole(principal, roles)) throw new IapAuthorizationError(403, "forbidden");
+  return principal;
+}
+
+export function requireResource(principal: Principal | null | undefined, type: string, id: string): Principal {
+  if (!principal) throw new IapAuthorizationError(401, "unauthenticated");
+  if (!hasResource(principal, type, id)) throw new IapAuthorizationError(403, "forbidden");
   return principal;
 }
 

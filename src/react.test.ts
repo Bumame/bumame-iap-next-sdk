@@ -11,6 +11,7 @@ describe("profileMenuView", () => {
       name: "Irfan Ghifari",
       roles: ["cis.doctor"],
       permissions: [],
+      resourceScopes: {},
     }, "Doctor");
     expect(view).toEqual({ name: "Irfan Ghifari", role: "Doctor", initials: "IG" });
   });
@@ -22,6 +23,7 @@ describe("profileMenuView", () => {
       audience: ["urn:bumame:cis"],
       roles: ["cis.front-office"],
       permissions: [],
+      resourceScopes: {},
       name: "Bumame User",
     });
     expect(view.role).toBe("Front Office");
