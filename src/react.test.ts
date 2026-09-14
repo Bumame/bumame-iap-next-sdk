@@ -28,4 +28,18 @@ describe("profileMenuView", () => {
     });
     expect(view.role).toBe("Front Office");
   });
+
+  it("selects the role owned by the active application", () => {
+    const view = profileMenuView({
+      subject: "user-3",
+      issuer: "https://auth.bumame.com",
+      audience: ["urn:bumame:crm"],
+      roles: ["app-and-data", "vpn.access", "crm.user"],
+      permissions: [],
+      resourceScopes: {},
+      name: "CRM User",
+    }, undefined, "crm");
+
+    expect(view.role).toBe("User");
+  });
 });

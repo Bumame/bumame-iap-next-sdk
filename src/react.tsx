@@ -7,6 +7,7 @@ export interface IapProfileMenuProps {
   principal: Principal;
   profileHref?: string;
   roleLabel?: string;
+  applicationKey?: string;
   showIdentity?: boolean;
   onLogout: () => void | Promise<void>;
   profileLabel?: string;
@@ -19,6 +20,7 @@ export function IapProfileMenu({
   principal,
   profileHref = "https://account.bumame.com/profile",
   roleLabel,
+  applicationKey,
   showIdentity = true,
   onLogout,
   profileLabel = "Profile settings",
@@ -28,7 +30,7 @@ export function IapProfileMenu({
 }: IapProfileMenuProps) {
   const [imageFailed, setImageFailed] = useState(false);
   const [open, setOpen] = useState(false);
-  const view = profileMenuView(principal, roleLabel);
+  const view = profileMenuView(principal, roleLabel, applicationKey);
   const linkChildren = <><ProfileIcon/>{profileLabel}</>;
   const link = renderProfileLink
     ? renderProfileLink({ href: profileHref, children: linkChildren })
@@ -55,11 +57,20 @@ export function IapProfileMenu({
   </details>;
 }
 
-export function profileMenuView(principal: Principal, roleLabel?: string) {
+export function profileMenuView(principal: Principal, roleLabel?: string, applicationKey?: string) {
   const name = principal.name?.trim() || principal.email?.trim() || "Bumame user";
   const parts = name.split(/\s+/).filter(Boolean).slice(0, 2);
   const initials = parts.length ? parts.map((part) => part[0]).join("").toUpperCase() : "?";
-  return { name, role: friendlyRole(roleLabel?.trim() || principal.roles[0] || "User"), initials };
+  const explicitLabel = roleLabel?.trim();
+  const normalizedKey = applicationKey?.trim().toLowerCase();
+  const applicationRole = normalizedKey
+    ? principal.roles.find((role) => role.trim().toLowerCase().startsWith(`${normalizedKey}.`))
+    : undefined;
+  return {
+    name,
+    role: friendlyRole(explicitLabel || applicationRole || principal.roles[0] || "User"),
+    initials,
+  };
 }
 
 function friendlyRole(value: string) {
