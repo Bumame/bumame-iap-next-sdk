@@ -1,19 +1,24 @@
 import { createRemoteJWKSet, decodeJwt, jwtVerify, type JWTPayload } from "jose";
-import type { AuthorizationRequest, DiscoveryDocument, IapConfig, Principal, TokenSet } from "./types.js";
+import type { AuthorizationRequest, DiscoveryDocument, IapConfig, Principal, TokenEndpointAuthMethod, TokenSet } from "./types.js";
 
 const textEncoder = new TextEncoder();
 const base64url = (bytes: Uint8Array) => Buffer.from(bytes).toString("base64url");
 const random = (length = 32) => { const bytes = new Uint8Array(length); crypto.getRandomValues(bytes); return base64url(bytes); };
+const formEncode = (value: string) => new URLSearchParams({ value }).toString().slice("value=".length);
 
 export class IapClient {
-  readonly config: Required<Pick<IapConfig, "issuer" | "clientId" | "audience" | "redirectUri">> & IapConfig;
+  readonly config: Required<Pick<IapConfig, "issuer" | "clientId" | "audience" | "redirectUri" | "tokenEndpointAuthMethod">> & IapConfig;
   private discoveryPromise?: Promise<DiscoveryDocument>;
   private jwks?: ReturnType<typeof createRemoteJWKSet>;
 
   constructor(config: IapConfig) {
     const issuer = config.issuer.trim().replace(/\/$/, "");
     if (!issuer || !config.clientId || !config.audience || !config.redirectUri) throw new Error("issuer, clientId, audience, and redirectUri are required");
-    this.config = { ...config, issuer, scopes: config.scopes ?? ["openid", "profile", "email", "roles", "offline_access"] };
+    const tokenEndpointAuthMethod = config.tokenEndpointAuthMethod ?? (config.clientSecret ? "client_secret_basic" : "none");
+    if (!["client_secret_basic", "client_secret_post", "none"].includes(tokenEndpointAuthMethod)) throw new Error("Unsupported tokenEndpointAuthMethod");
+    if (tokenEndpointAuthMethod === "none" && config.clientSecret !== undefined) throw new Error("clientSecret must be omitted for tokenEndpointAuthMethod none");
+    if (tokenEndpointAuthMethod !== "none" && !config.clientSecret?.trim()) throw new Error("clientSecret is required for confidential client authentication");
+    this.config = { ...config, issuer, tokenEndpointAuthMethod, scopes: config.scopes ?? ["openid", "profile", "email", "roles", "offline_access"] };
   }
 
   async discover(): Promise<DiscoveryDocument> {
@@ -63,11 +68,37 @@ export class IapClient {
 
   private async tokenRequest(parameters: Record<string, string>): Promise<TokenSet> {
     const discovery = await this.discover();
-    const body = new URLSearchParams({ ...parameters, client_id: this.config.clientId });
-    if (this.config.clientSecret) body.set("client_secret", this.config.clientSecret);
-    const response = await fetch(discovery.token_endpoint, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body, cache: "no-store" });
-    if (!response.ok) throw new Error(`IAP token exchange failed: ${response.status}`);
+    const method = this.config.tokenEndpointAuthMethod;
+    if (discovery.token_endpoint_auth_methods_supported && !discovery.token_endpoint_auth_methods_supported.includes(method)) {
+      throw new Error(`IAP token endpoint does not advertise ${method}`);
+    }
+    const body = new URLSearchParams(parameters);
+    const headers: Record<string, string> = { "content-type": "application/x-www-form-urlencoded" };
+    if (method === "client_secret_basic") {
+      const credentials = `${formEncode(this.config.clientId)}:${formEncode(this.config.clientSecret!)}`;
+      headers.authorization = `Basic ${Buffer.from(credentials, "utf8").toString("base64")}`;
+    } else {
+      body.set("client_id", this.config.clientId);
+      if (method === "client_secret_post") body.set("client_secret", this.config.clientSecret!);
+    }
+    const response = await fetch(discovery.token_endpoint, { method: "POST", headers, body, cache: "no-store" });
+    if (!response.ok) {
+      // Provider descriptions can echo credentials. Expose only known OAuth codes.
+      const error = await response.json().catch(() => undefined) as unknown;
+      const code = isRecord(error) && typeof error.error === "string" && TOKEN_ERROR_CODES.has(error.error)
+        ? error.error : "token_exchange_failed";
+      throw new IapTokenError(response.status, code, method);
+    }
     return response.json() as Promise<TokenSet>;
+  }
+}
+
+const TOKEN_ERROR_CODES = new Set(["invalid_request", "invalid_client", "invalid_grant", "unauthorized_client", "unsupported_grant_type", "invalid_scope", "server_error", "temporarily_unavailable"]);
+
+export class IapTokenError extends Error {
+  constructor(public readonly status: number, public readonly code: string, public readonly authMethod: TokenEndpointAuthMethod) {
+    super(`IAP token exchange failed: ${status} (${code}; auth method: ${authMethod})`);
+    this.name = "IapTokenError";
   }
 }
 
