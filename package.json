@@ -1,6 +1,6 @@
 {
   "name": "@bumame/iap-next-sdk",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Bumame IAP server helpers for Next.js applications",
   "license": "MIT",
   "type": "module",
@@ -8,15 +8,52 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
-    "./react": { "types": "./dist/react.d.ts", "import": "./dist/react.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js"
+    }
   },
-  "files": ["dist", "README.md", "LICENSE"],
-  "scripts": { "build": "tsc -p tsconfig.json", "prepare": "npm run build", "test": "vitest run", "check": "npm run build && npm test" },
-  "dependencies": { "jose": "^6.1.0" },
-  "devDependencies": { "@types/node": "^24.0.0", "@types/react": "^19.2.0", "react": "^19.2.0", "typescript": "^5.9.0", "vitest": "^3.2.0" },
-  "engines": { "node": ">=20" },
-  "peerDependencies": { "next": ">=15 <17", "react": ">=18 <20" },
-  "peerDependenciesMeta": { "next": { "optional": true }, "react": { "optional": true } },
-  "publishConfig": { "access": "restricted" }
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepare": "npm run build",
+    "test": "vitest run",
+    "check": "npm run build && npm test"
+  },
+  "dependencies": {
+    "jose": "^6.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.2.0",
+    "react": "^19.2.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "peerDependencies": {
+    "next": ">=15 <17",
+    "react": ">=18 <20"
+  },
+  "peerDependenciesMeta": {
+    "next": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
+  },
+  "publishConfig": {
+    "access": "restricted"
+  }
 }
