@@ -12,7 +12,6 @@ export interface IapSessionStore {
   clearAuthorizationRequest(): Promise<void>;
 }
 
-/** Server-side OIDC orchestration for Next.js route handlers. */
 export class IapServerSession {
   constructor(readonly client: IapClient, readonly store: IapSessionStore) {}
 
