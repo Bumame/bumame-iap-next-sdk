@@ -29,7 +29,7 @@ requireAnyPermission(principal, ["cis.patient.read"]);
 requireResource(principal, "cis.clinics", selectedClinicId);
 ```
 
-Store `state`, `nonce`, PKCE verifier, tokens, and refresh tokens in encrypted, `HttpOnly`, `Secure`, `SameSite=Lax` server cookies or a server session. Never expose client secrets or refresh tokens to browser JavaScript. UI checks are for visibility only; the Go backend remains the security boundary.
+Store `state`, `nonce`, PKCE verifier, and the complete token set in a server-side session store. Put only a random opaque session ID in an `HttpOnly`, `Secure`, `SameSite=Lax` cookie. IAP token sets can exceed a browser's per-cookie size limit, even after encryption; do not serialize `TokenSet` into a cookie or split it across cookies. Never expose client secrets or refresh tokens to browser JavaScript. UI checks are for visibility only; the Go backend remains the security boundary. See the [Redis-backed Next.js BFF example](https://docs.iap.bumame.com/implementation/nextjs-bff).
 
 ## Token endpoint authentication
 
@@ -61,11 +61,11 @@ and active secret. After correcting configuration, start a new login flow.
 ## Minimal route-handler flow
 
 `IapServerSession` owns PKCE, callback validation, refresh, and token lifecycle.
-The Next app only implements `IapSessionStore` using encrypted HttpOnly cookies
-or a server-side session library.
+The Next app implements `IapSessionStore` with server-side token persistence and
+an opaque session-ID cookie.
 
 ```ts
-const session = new IapServerSession(iap, cookieSessionStore);
+const session = new IapServerSession(iap, serverSessionStore);
 
 // /api/auth/login
 return Response.redirect((await session.start()).url);

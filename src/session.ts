@@ -3,6 +3,7 @@ import type { AuthorizationRequest, Principal, TokenSet } from "./types.js";
 import { IapClient } from "./client.js";
 
 /** Adapter for encrypted HttpOnly cookies or a server-side session. */
+/** Persist tokens server-side; browser cookies should carry only an opaque session ID. */
 export interface IapSessionStore {
   readTokens(): Promise<TokenSet | undefined>;
   writeTokens(tokens: TokenSet): Promise<void>;
